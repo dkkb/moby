@@ -339,6 +339,7 @@ func (i *ImageService) SquashImage(id, parent string) (string, error) {
 		return "", errors.Wrap(err, "error marshalling image config")
 	}
 
+	// it's unneeded to Marshal  newImage
 	newImgID, err := i.imageStore.Create(b)
 	if err != nil {
 		return "", errors.Wrap(err, "error creating new image after squash")

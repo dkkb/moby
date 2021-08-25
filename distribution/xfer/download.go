@@ -254,6 +254,7 @@ func (ldm *LayerDownloadManager) makeDownloadFunc(descriptor DownloadDescriptor,
 				progress.Update(progressOutput, descriptor.ID(), "Waiting")
 				<-start
 			}
+			downloadStart := time.Now()
 
 			if parentDownload != nil {
 				// Did the parent download already fail or get
@@ -342,6 +343,7 @@ func (ldm *LayerDownloadManager) makeDownloadFunc(descriptor DownloadDescriptor,
 				}
 				parentLayer = l.ChainID()
 			}
+			downloadEnd := time.Now()
 
 			reader := progress.NewProgressReader(ioutils.NewCancelReadCloser(d.Transfer.Context(), downloadReader), progressOutput, size, descriptor.ID(), "Extracting")
 			defer reader.Close()
@@ -370,8 +372,13 @@ func (ldm *LayerDownloadManager) makeDownloadFunc(descriptor DownloadDescriptor,
 				}
 				return
 			}
-
-			progress.Update(progressOutput, descriptor.ID(), "Pull complete")
+			extractEnd := time.Now()
+			_ = progressOutput.WriteProgress(progress.Progress{
+				ID:           descriptor.ID(),
+				Action:       "Pull complete",
+				DownloadCost: downloadEnd.Sub(downloadStart).Round(time.Second),
+				ExtractCost:  extractEnd.Sub(downloadEnd).Round(time.Second),
+			})
 			withRegistered, hasRegistered := descriptor.(DownloadDescriptorWithRegistered)
 			if hasRegistered {
 				withRegistered.Registered(d.layer.DiffID())
